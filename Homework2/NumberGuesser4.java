@@ -146,7 +146,7 @@ public class NumberGuesser4 {
             rl433 2/12/23
             This is the change that I added
             diff is for when the code is running, It's going to
-            take the number that that is right and subtract it from the 
+            take the number that is right and subtract it from the 
             user guess.
             After that it will take the diff number and run through the 
             if statements.
