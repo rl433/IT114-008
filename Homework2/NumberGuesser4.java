@@ -1,3 +1,4 @@
+package Homework2;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileWriter;
@@ -129,6 +130,40 @@ public class NumberGuesser4 {
         } else {
             System.out.println("That's wrong");
             strikes++;
+            /*
+            rl433 2/10/23
+            This is the change that I did
+            if the guess is greater then number it will display
+            lower giving a hint to the guesser that the number is 
+            lower and the same for the opposite 
+             */
+            if (guess > number) {
+                System.out.println("Hint: Lower");
+            } else {
+                System.out.println( "Hint: Higher");
+            }
+            /*
+            rl433 2/12/23
+            This is the change that I added
+            diff is for when the code is running, It's going to
+            take the number that that is right and subtract it from the 
+            user guess.
+            After that it will take the diff number and run through the 
+            if statements.
+            First if is when the diff number is less then or equal to 2,
+            then a message will appear telling the user that the number that
+            he guessed is very close to the actual number. It is the same for the
+            else if and else statements except it will display warm if the users guess 
+            is 5 numbers away and cold if the number is anything else greater then 6.
+             */
+            int diff = Math.abs(number - guess);
+            if (diff <= 2) {
+                System.out.println("Hot");
+            } else if (diff <= 5) {
+                System.out.println("Warm");
+            } else {
+                System.out.println("Cold");
+            }
             if (strikes >= maxStrikes) {
                 lose();
                 pickNewRandom = true;
