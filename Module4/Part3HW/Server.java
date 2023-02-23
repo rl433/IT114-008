@@ -6,6 +6,9 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
+
+import org.w3c.dom.UserDataHandler;
 
 public class Server {
     int port = 3001;
@@ -69,6 +72,36 @@ public class Server {
 
     private boolean processCommand(String message, long clientId){
         System.out.println("Checking command: " + message);
+        /*
+         rl433
+         2/19/23
+         chooses the flip method if the key word flip is
+         typed as well as math.random to find whether the coin will be
+         heads or tails
+         */
+        if (message.equalsIgnoreCase("flip")) {
+            if (Math.random() > 0.5) {
+                broadcast("flipped a coin and got heads.", clientId);
+                return true;
+            } else {                    
+                broadcast("flipped a coin and got tails", clientId);
+                return true;
+            }  
+        }
+        /*
+        rl433
+        2/20/23
+        chooses the roll method if the key word roll is 
+        typed. Prints out the number of dices that are being used.
+         */
+        if(message.startsWith("roll")){
+            String[] first = message.split(" ");
+            String[] last = first[1].split("d");
+            broadcast(Dice(Integer.parseInt(last[0]), Integer.parseInt(last[1])), clientId);
+            System.out.println(clientId + Dice(Integer.parseInt(last[0]), Integer.parseInt(last[1])));
+            return true;
+        }
+
         if(message.equalsIgnoreCase("disconnect")){
             Iterator<ServerThread> it = clients.iterator();
             while (it.hasNext()) {
@@ -80,9 +113,29 @@ public class Server {
                     break;
                 }
             }
-            return true;
         }
         return false;
+    }
+    /*
+    rl433
+    2/20/23
+    Created a Dice method that has two
+    dies, a result, and a total.
+    As well as has a random variable.
+     */
+    Random rand = new Random();
+    public String Dice(int die1, int die2){
+        int dice1, dice2, result = 0, total = 0;
+        dice1 = die1;
+        dice2 = die2;
+
+        for (int i = 0; i<dice1; i++){
+            result = rand.nextInt(dice2)+1;
+            total += result;
+        }
+        
+        
+        return " you got " + total;
     }
     public static void main(String[] args) {
         System.out.println("Starting Server");
