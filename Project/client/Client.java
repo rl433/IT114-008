@@ -14,11 +14,14 @@ import java.util.logging.Logger;
 import Project.common.Constants;
 import Project.common.Payload;
 import Project.common.PayloadType;
+import Project.common.Player;
 import Project.common.RoomResultPayload;
+import Project.common.TimedEvent;
 
 public enum Client {
     Instance;
 
+    Scanner scanner = new Scanner(System.in);
     Socket server = null;
     ObjectOutputStream out = null;
     ObjectInputStream in = null;
@@ -159,13 +162,44 @@ public enum Client {
             }
             while (iter.hasNext()) {
                 Entry<Long, String> user = iter.next();
-                System.out.println(String.format("%s[%s]", user.getValue(), user.getKey()));
+                System.out.println(String.format("%s[%s] a", user.getValue(), user.getKey()));
             }
             return true;
         } else if (text.equalsIgnoreCase("/ready")) {
             sendReadyStatus();
+        /*
+         *rl433
+         4/1/23
+         created an else if statement that once /choice is typed by the user
+         it will show three choices R: rock, P: paper, S: scissors
+         */
+        } else if (text.startsWith("/choice")) {
+            System.out.println("choice: R, P, S. skip to skip game");
+            text = text.replace("/choice ", "");
+            if (text.equalsIgnoreCase("R")) {
+                sendChoiceStatus("R");
+            } else if (text.equalsIgnoreCase("P")) {
+                sendChoiceStatus("P");
+            } else if(text.equalsIgnoreCase("S")) {
+                sendChoiceStatus("S");
+            }
+        } else if (text.equalsIgnoreCase("skip")) {
+            sendSkipStatus();
         }
         return false;
+    }
+
+    protected void sendSkipStatus() throws IOException {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.OUT);
+        out.writeObject(p);
+    }
+
+    protected void sendChoiceStatus(String choice) throws IOException {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.CHOICE);
+        p.setMessage(choice);
+        out.writeObject(p);
     }
 
     // Send methods

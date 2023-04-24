@@ -7,7 +7,9 @@ public class Payload implements Serializable {
     private static final long serialVersionUID = 1L;// change this if the class changes
 
     /**
-     * Determines how to process the data on the receiver's side
+     * rl433
+     * 4/6/23
+       Determines how to process the data on the receiver's side
      */
     private PayloadType payloadType;
 
@@ -20,7 +22,9 @@ public class Payload implements Serializable {
     }
 
     /**
-     * Who the payload is from
+     * rl433
+     * 4/6/23
+       Who the payload is from
      */
     private String clientName;
 
@@ -43,7 +47,9 @@ public class Payload implements Serializable {
     }
 
     /**
-     * Generic text based message
+     * rl433
+     * 4/6/23
+       Generic text based message
      */
     private String message;
 
@@ -55,6 +61,13 @@ public class Payload implements Serializable {
         this.message = message;
     }
 
+    /*
+     * rl433
+     * 4/6/23
+     * Override toString message
+     * formats the message as payloadtype, changing it to string, clientid, clientname, and
+     * getting the message
+     */
     @Override
     public String toString() {
         return String.format("Type[%s],ClientId[%s] ClientName[%s], Message[%s]", getPayloadType().toString(),

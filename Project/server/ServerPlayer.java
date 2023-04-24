@@ -16,4 +16,12 @@ public class ServerPlayer extends Player {
     public ServerPlayer(ServerThread client) {
         setClient(client);
     }
+
+    
+
+    // public void outPlayer() {
+        
+    // }
+
+    
 }

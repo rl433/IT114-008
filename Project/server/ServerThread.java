@@ -138,6 +138,19 @@ public class ServerThread extends Thread {
         return send(p);
     }
 
+    /*
+     * rl433
+     * 4/1/23
+     * Created a boolean statement for skip
+     * that is going to send it to payload
+     */
+    public boolean sendSkip(long clientId) {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.SKIP);
+        return send(p);
+    }
+
+    
     public boolean sendConnectionStatus(long clientId, String who, boolean isConnected) {
         Payload p = new Payload();
         p.setPayloadType(isConnected ? PayloadType.CONNECT : PayloadType.DISCONNECT);
@@ -228,6 +241,14 @@ public class ServerThread extends Thread {
                     logger.severe(String.format("There was a problem during readyCheck %s", e.getMessage()));
                     e.printStackTrace();
                 }
+                break;
+                /*
+                 * rl433
+                 * 4/6/23
+                 * Creating a case choice which will set the choice of the client
+                 */
+            case CHOICE:
+                ((GameRoom) currentRoom).setChoice(p.getMessage(),myClientId);
                 break;
             default:
                 break;
