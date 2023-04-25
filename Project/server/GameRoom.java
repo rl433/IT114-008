@@ -100,7 +100,7 @@ public class GameRoom extends Room {
     protected void timeExpired() {
         updatePhase(Phase.OUTCOME);
         for (ServerPlayer player : players.values()) {
-            if (!player.isReady() || "skip".equals(player.getChoice()) || player.getChoice() == null) {
+            if (!player.isReady() || player.getChoice() == null) {
                 player.setSkipped(true);
                 sendMessage(null, player.getClient().getClientName() + " skipped due to timeout");
             }
@@ -139,46 +139,62 @@ public class GameRoom extends Room {
 
     protected void outcome() {
         // deal with skipped players first
-        players.values().forEach(p -> {
-            if (p.getChoice() == null || p.getChoice().length() == 0 || "skip".equals(p.getChoice())) {
-                p.setSkipped(true);
-                p.setChoice("skip");
-            }
-        });
+        List<ServerPlayer> skipped = players.values().stream().filter(p -> p.getChoice() == null || p.getChoice().length() == 0
+            || "skip".equals(p.getChoice())).toList();
+
+        // players.values().forEach(p -> {
+        //     if (p.getChoice() == null || p.getChoice().length() == 0 || "skip".equals(p.getChoice())) {
+        //         p.setSkipped(true);
+        //         p.setChoice("skip");
+        //         sendMessage(null, "Player: " + p.getClient().getClientName() + " skipped his turn.");
+        //     }
+        // });
         List<ServerPlayer> active = players.values().stream().filter(p -> p.isReady() && p.isNotOut() &&
                 !"skip".equals(p.getChoice())).toList();
         logger.info(String.format("%s Outcome Active Players %s %s", Constants.ANSI_BRIGHT_MAGENTA, active.size(),
                 Constants.ANSI_RESET));
-        for (int i = 0; i < active.size(); i++) {
-            ServerPlayer playerA = (ServerPlayer) active.get(i);
-            int otherPlayer = i + 1;
-            if (otherPlayer >= active.size()) {
-                otherPlayer = 0;
+        if (active.size() > 1) {
+            for (int i = 0; i < active.size(); i++) {
+                ServerPlayer playerA = (ServerPlayer) active.get(i);
+                int otherPlayer = i + 1;
+                if (otherPlayer >= active.size()) {
+                    otherPlayer = 0;
+                }
+                ServerPlayer playerB = active.get(otherPlayer);
+    
+                // important codes
+                // players.values().filter(p->p.isReady()).forEach(p->P.setChoice(""));
+                // players.values().filter(p->p.isReady()).forEach(p->{p.setChoice(""));p.setIsOut(false)};
+                logger.info(String.format("%s PlayerA %s vs PlayerB %s %s", Constants.ANSI_BLUE, playerA.getChoice(),
+                        playerB.getChoice(), Constants.ANSI_RESET));
+                int outcome = checkOutcome(playerA.getChoice(), playerB.getChoice());
+                if (outcome == 0) {
+                    // tied
+                    // TODO fix message show player A and Player B, their choices, and the result
+                    sendMessage(null,
+                            "Players: " + playerA.getClient().getClientName() + " and " + playerB.getClient().getClientName() + " both tied with " + playerA.getChoice());
+                } else if (outcome == 1) {
+                    // A won
+                    // TODO fix message show player A and Player B, their choices, and the result
+                    sendMessage(null,
+                            "Player: " + playerA.getClient().getClientName() + " wins with " + playerA.getChoice() + " against Player: " +
+                            playerB.getClient().getClientName() + " that chose " + playerB.getChoice());
+                            playerB.setOut(true);
+                } else {
+                    // A lost
+                    // TODO fix message show player A and Player B, their choices, and the result
+                    sendMessage(null,
+                            "Player: " + playerB.getClient().getClientName() + " wins with " + playerB.getChoice() + " against Player: " +
+                            playerA.getClient().getClientName() + "that chose " + playerA.getChoice());
+                            playerA.setOut(true);
+                }
+        
             }
-            ServerPlayer playerB = active.get(otherPlayer);
+        if (active.size() == 0) {
+            sendMessage(null, "There are no more players.");
 
-            // important codes
-            // players.values().filter(p->p.isReady()).forEach(p->P.setChoice(""));
-            // players.values().filter(p->p.isReady()).forEach(p->{p.setChoice(""));p.setIsOut(false)};
-            logger.info(String.format("%s PlayerA %s vs PlayerB %s %s", Constants.ANSI_BLUE, playerA.getChoice(),
-                    playerB.getChoice(), Constants.ANSI_RESET));
-            int outcome = checkOutcome(playerA.getChoice(), playerB.getChoice());
-            if (outcome == 0) {
-                // tied
-                // TODO fix message show player A and Player B, their choices, and the result
-                sendMessage(null,
-                        "Players tied TODO fix message");
-            } else if (outcome == 1) {
-                // A won
-                // TODO fix message show player A and Player B, their choices, and the result
-                sendMessage(null,
-                        "Player: " + playerA.getClient().getClientName() + " wins with " + playerA.getChoice());
-            } else {
-                // A lost
-                // TODO fix message show player A and Player B, their choices, and the result
-                sendMessage(null,
-                        "Player: " + playerB.getClient().getClientName() + " wins with " + playerB.getChoice());
-            }
+        }
+
             /*
              * if (playerA.getChoice().equals("R")) {
              * if (playerB.getChoice().equals("P")) {
@@ -241,21 +257,13 @@ public class GameRoom extends Room {
              * sendMessage(null, "Both players have tied with rock");
              * }
              * }
-             */
-            /*
-             * if (playerA.getChoice().equals("skip")) {
-             * playerA.setSkipped(true);
-             * }
-             * if (playerB.getChoice().equals("skip")) {
-             * playerB.setSkipped(true);
-             * }
-             */
+             */    
 
         }
         List<ServerPlayer> remainingPlayers = players.values().stream().filter(p -> {
             return p.isReady() && !p.isSkipped() && p.isNotOut();
         }).toList();
-
+        
         if (remainingPlayers.size() == 1) {
             ServerPlayer winner = remainingPlayers.get(0);
             sendMessage(null, "Player " + winner.getClient().getClientName() + " wins the game.");
@@ -265,6 +273,8 @@ public class GameRoom extends Room {
         else if (remainingPlayers.size() == 0) {
             sendMessage(null, "All players have tied.");
             resetSession();
+        } if (skipped.size() > 1) {
+            sendMessage(null, "Player: " + skipped.getClient().getClientName() + " skipped his turn.");
         }
 
         else if (remainingPlayers.size() > 1) {
@@ -289,6 +299,7 @@ public class GameRoom extends Room {
     protected void setSkipped(long clientId) {
         ServerPlayer sp = players.get(clientId);
         sp.setSkipped(true);
+        //sendMessage(null, "Player: " + sp.getClient().getClientName() + " skipped his turn.");
         // ???
         /*
          * if (!sp.getClient().sendSkip(clientId) == true) {
