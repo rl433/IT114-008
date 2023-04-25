@@ -4,16 +4,7 @@ public class Player {
 
     private boolean isReady = false;
     private boolean isSkipped = false;
-    private boolean isOut = true;
-    private boolean setIsOut = false;
-
-    public boolean isSetIsOut() {
-        return setIsOut;
-    }
-
-    public void setSetIsOut(boolean setIsOut) {
-        this.setIsOut = setIsOut;
-    }
+    private boolean isOut = false;
 
     private String Hold;
 
@@ -25,7 +16,6 @@ public class Player {
         return this.isReady;
     }
 
-    
     public boolean isNotOut() {
         return !isOut;
     }
@@ -33,11 +23,11 @@ public class Player {
     public void setOut(boolean isOut) {
         this.isOut = isOut;
     }
-    
+
     public boolean isOut() {
         return isOut;
     }
-    
+
     public void setSkipped(boolean isSkipped) {
         this.isSkipped = isSkipped;
     }
@@ -57,7 +47,7 @@ public class Player {
     public void setChoice(String hold) {
         Hold = hold;
     }
-    
+
     public String getChoice() {
         return this.Hold;
     }

@@ -47,13 +47,11 @@ public class GameRoom extends Room {
                 readyCheck(true);
             });
         }
-        players.values().stream().filter(p -> p.getClient().getClientId() == client.getClientId()).findFirst()
-                .ifPresent(p -> {
-                    p.setReady(true);
-                    logger.info(String.format("Marked player %s[%s] as ready", p.getClient().getClientName(), p
-                            .getClient().getClientId()));
-                    syncReadyStatus(p.getClient().getClientId());
-                });
+        if (players.containsKey(client.getClientId())) {
+            players.get(client.getClientId()).setReady(true);
+            logger.info(String.format("Marked player %s[%s] as ready", client.getClientName(), client.getClientId()));
+            syncReadyStatus(client.getClientId());
+        }
         readyCheck(false);
     }
 
@@ -89,6 +87,8 @@ public class GameRoom extends Room {
 
     private synchronized void start() {
         updatePhase(Phase.PICKING);
+        // TODO only do this if it's the first round
+        players.values().stream().forEach(p -> p.setOut(false));
         // players.values().stream().forEach(p -> p.setSetIsOut(false));
         // pickRandom();
         // TODO example
@@ -100,7 +100,7 @@ public class GameRoom extends Room {
     protected void timeExpired() {
         updatePhase(Phase.OUTCOME);
         for (ServerPlayer player : players.values()) {
-            if(!player.isReady() || "skip".equals(player.getChoice()) || player.getChoice() == null) {
+            if (!player.isReady() || "skip".equals(player.getChoice()) || player.getChoice() == null) {
                 player.setSkipped(true);
                 sendMessage(null, player.getClient().getClientName() + " skipped due to timeout");
             }
@@ -109,95 +109,150 @@ public class GameRoom extends Room {
     }
 
     // /*
-    //  * Picks player randomly or next player 
-    //  */
+    // * Picks player randomly or next player
+    // */
     // private void pickRandom() {
-    //     if (currentPlayer == null && players.values().stream().count() > 0) {
-    //         // orElse() triggers when list is empty, shouldn't happen
-    //         currentPlayer = players.values().stream().filter(p -> p.isReady()).findAny().orElse(null);
-    //     } else {
-    //         // find the next player in order or default to first ready
-    //         int currentPlayerIndex = players.values().stream().toList().indexOf(currentPlayer) + 1;
-    //         currentPlayer = players.values().stream().skip(currentPlayerIndex).findFirst().orElse(
-    //                 players.values().stream().filter(p -> p.isReady()).findFirst().orElse(null));
-    //     }
+    // if (currentPlayer == null && players.values().stream().count() > 0) {
+    // // orElse() triggers when list is empty, shouldn't happen
+    // currentPlayer = players.values().stream().filter(p ->
+    // p.isReady()).findAny().orElse(null);
+    // } else {
+    // // find the next player in order or default to first ready
+    // int currentPlayerIndex =
+    // players.values().stream().toList().indexOf(currentPlayer) + 1;
+    // currentPlayer =
+    // players.values().stream().skip(currentPlayerIndex).findFirst().orElse(
+    // players.values().stream().filter(p -> p.isReady()).findFirst().orElse(null));
     // }
+    // }
+    private int checkOutcome(String a, String b) {
+        if (a.equals(b)) {
+            return 0;
+        } else if ((a.equals("R") && b.equals("S"))
+                || (a.equals("S") && b.equals("P"))
+                || (a.equals("P") && b.equals("R"))) {
+            return 1;
+        } else {
+            return -1;
+        }
+    }
 
     protected void outcome() {
-        List<ServerPlayer> active = players.values().stream().filter(p->p.isReady() && p.isNotOut() && 
-            p.getChoice() != null && p.getChoice().length() > 0).toList();
+        // deal with skipped players first
+        players.values().forEach(p -> {
+            if (p.getChoice() == null || p.getChoice().length() == 0 || "skip".equals(p.getChoice())) {
+                p.setSkipped(true);
+                p.setChoice("skip");
+            }
+        });
+        List<ServerPlayer> active = players.values().stream().filter(p -> p.isReady() && p.isNotOut() &&
+                !"skip".equals(p.getChoice())).toList();
+        logger.info(String.format("%s Outcome Active Players %s %s", Constants.ANSI_BRIGHT_MAGENTA, active.size(),
+                Constants.ANSI_RESET));
         for (int i = 0; i < active.size(); i++) {
-            ServerPlayer playerA = (ServerPlayer)active.get(i);
+            ServerPlayer playerA = (ServerPlayer) active.get(i);
             int otherPlayer = i + 1;
             if (otherPlayer >= active.size()) {
                 otherPlayer = 0;
             }
             ServerPlayer playerB = active.get(otherPlayer);
 
-            //important codes
-            //players.values().filter(p->p.isReady()).forEach(p->P.setChoice(""));
-            //players.values().filter(p->p.isReady()).forEach(p->{p.setChoice(""));p.setIsOut(false)};
-
-            if (playerA.getChoice().equals("R")){
-                if(playerB.getChoice().equals("P")) {
-                    sendMessage(null, "Player: " + playerB.getClient().getClientName() + " wins with paper");
-                    playerA.setOut(true);
-                }
+            // important codes
+            // players.values().filter(p->p.isReady()).forEach(p->P.setChoice(""));
+            // players.values().filter(p->p.isReady()).forEach(p->{p.setChoice(""));p.setIsOut(false)};
+            logger.info(String.format("%s PlayerA %s vs PlayerB %s %s", Constants.ANSI_BLUE, playerA.getChoice(),
+                    playerB.getChoice(), Constants.ANSI_RESET));
+            int outcome = checkOutcome(playerA.getChoice(), playerB.getChoice());
+            if (outcome == 0) {
+                // tied
+                // TODO fix message show player A and Player B, their choices, and the result
+                sendMessage(null,
+                        "Players tied TODO fix message");
+            } else if (outcome == 1) {
+                // A won
+                // TODO fix message show player A and Player B, their choices, and the result
+                sendMessage(null,
+                        "Player: " + playerA.getClient().getClientName() + " wins with " + playerA.getChoice());
+            } else {
+                // A lost
+                // TODO fix message show player A and Player B, their choices, and the result
+                sendMessage(null,
+                        "Player: " + playerB.getClient().getClientName() + " wins with " + playerB.getChoice());
             }
-            if (playerA.getChoice().equals("P")) {
-                if (playerB.getChoice().equals("S")) {
-                    sendMessage(null, "Player: " + playerB.getClient().getClientName() + " wins with scissor");
-                    playerA.setOut(true);
-                }
-            }
-            if (playerA.getChoice().equals("S")) {
-                if (playerB.getChoice().equals("R")) {
-                    sendMessage(null, "Player: " + playerB.getClient().getClientName() + " wins with rock");
-                    playerA.setOut(true);;
-                }
-            }
-            if (playerB.getChoice().equals("R")) {
-                if (playerA.getChoice().equals("P")) {
-                    sendMessage(null, "Player: " + playerA.getClient().getClientName() + " wins with paper");
-                    playerB.setOut(true);;
-                }
-            }
-            if (playerB.getChoice().equals("P")) {
-                if (playerA.getChoice().equals("S")) {
-                    sendMessage(null, "Player: " + playerA.getClient().getClientName() + " wins with scissor");
-                    playerB.setOut(true);;
-                }
-            }
-            if (playerB.getChoice().equals("S")) {
-                if (playerA.getChoice().equals("R")) {
-                    sendMessage(null, "Player: " + playerA.getClient().getClientName() + " wins with rock");
-                    playerB.setOut(true);;
-                }
-            }
-            if (playerB.getChoice().equals("S")) {
-                if (playerA.getChoice().equals("S")) {
-                    sendMessage(null, "Both players have tied with scissor");
-                }
-            }
-            if (playerB.getChoice().equals("P")) {
-                if (playerA.getChoice().equals("P")) {
-                    sendMessage(null, "Both players have tied with paper");
-                }
-            }
-            if (playerB.getChoice().equals("R")) {
-                if (playerA.getChoice().equals("R")) {
-                    sendMessage(null, "Both players have tied with rock");
-                }
-            }
-            if (playerA.getChoice().equals("skip")) {
-                playerA.setSkipped(true);
-            } 
-            if (playerB.getChoice().equals("skip")) {
-                playerB.setSkipped(true);
-            }
+            /*
+             * if (playerA.getChoice().equals("R")) {
+             * if (playerB.getChoice().equals("P")) {
+             * sendMessage(null, "Player: " + playerB.getClient().getClientName() +
+             * " wins with paper");
+             * playerA.setOut(true);
+             * }
+             * }
+             * if (playerA.getChoice().equals("P")) {
+             * if (playerB.getChoice().equals("S")) {
+             * sendMessage(null, "Player: " + playerB.getClient().getClientName() +
+             * " wins with scissor");
+             * playerA.setOut(true);
+             * }
+             * }
+             * if (playerA.getChoice().equals("S")) {
+             * if (playerB.getChoice().equals("R")) {
+             * sendMessage(null, "Player: " + playerB.getClient().getClientName() +
+             * " wins with rock");
+             * playerA.setOut(true);
+             * ;
+             * }
+             * }
+             * if (playerB.getChoice().equals("R")) {
+             * if (playerA.getChoice().equals("P")) {
+             * sendMessage(null, "Player: " + playerA.getClient().getClientName() +
+             * " wins with paper");
+             * playerB.setOut(true);
+             * ;
+             * }
+             * }
+             * if (playerB.getChoice().equals("P")) {
+             * if (playerA.getChoice().equals("S")) {
+             * sendMessage(null, "Player: " + playerA.getClient().getClientName() +
+             * " wins with scissor");
+             * playerB.setOut(true);
+             * ;
+             * }
+             * }
+             * if (playerB.getChoice().equals("S")) {
+             * if (playerA.getChoice().equals("R")) {
+             * sendMessage(null, "Player: " + playerA.getClient().getClientName() +
+             * " wins with rock");
+             * playerB.setOut(true);
+             * ;
+             * }
+             * }
+             * if (playerB.getChoice().equals("S")) {
+             * if (playerA.getChoice().equals("S")) {
+             * sendMessage(null, "Both players have tied with scissor");
+             * }
+             * }
+             * if (playerB.getChoice().equals("P")) {
+             * if (playerA.getChoice().equals("P")) {
+             * sendMessage(null, "Both players have tied with paper");
+             * }
+             * }
+             * if (playerB.getChoice().equals("R")) {
+             * if (playerA.getChoice().equals("R")) {
+             * sendMessage(null, "Both players have tied with rock");
+             * }
+             * }
+             */
+            /*
+             * if (playerA.getChoice().equals("skip")) {
+             * playerA.setSkipped(true);
+             * }
+             * if (playerB.getChoice().equals("skip")) {
+             * playerB.setSkipped(true);
+             * }
+             */
 
         }
-        List<ServerPlayer> remainingPlayers = players.values().stream().filter(p-> {
+        List<ServerPlayer> remainingPlayers = players.values().stream().filter(p -> {
             return p.isReady() && !p.isSkipped() && p.isNotOut();
         }).toList();
 
@@ -211,12 +266,12 @@ public class GameRoom extends Room {
             sendMessage(null, "All players have tied.");
             resetSession();
         }
-            
+
         else if (remainingPlayers.size() > 1) {
             sendMessage(null, "Since there is no one winner, the game will start again.");
             start();
         }
-        
+
     }
 
     /*
@@ -226,36 +281,40 @@ public class GameRoom extends Room {
      */
     protected void setChoice(String choice, long clientId) {
         ServerPlayer sp = players.get(clientId);
-        logger.info("A choice has been made.");
+        logger.info(String.format("%s ClientId %s chose %s %s", Constants.ANSI_BRIGHT_YELLOW, clientId,
+                choice, Constants.ANSI_RESET));
         sp.setHold(choice);
     }
 
     protected void setSkipped(long clientId) {
         ServerPlayer sp = players.get(clientId);
-        sp.setSkipped(false);
-        if (!sp.getClient().sendSkip(clientId) == true) {
-            players.values().stream().filter(ServerPlayer::isSkipped);
-        }
+        sp.setSkipped(true);
+        // ???
+        /*
+         * if (!sp.getClient().sendSkip(clientId) == true) {
+         * players.values().stream().filter(ServerPlayer::isSkipped);
+         * }
+         */
     }
 
-    //serverplayer.getChoice(CHOICE);
+    // serverplayer.getChoice(CHOICE);
     // private synchronized void startRound() {
-    //     if (roundTimer != null) {
-    //         roundTimer.cancel();
-    //         roundTimer = null;
-    //     }
-    //     roundTimer = new TimedEvent(15, () -> {
-    //         sendMessage(null, "Times up!");
-    //         updatePhase(Phase.OUTCOME);
-    //         roundTimer = new TimedEvent(15, () -> {
-    //             sendMessage(null, "Times up!");
-    //         });
-    //     });
-    //}
+    // if (roundTimer != null) {
+    // roundTimer.cancel();
+    // roundTimer = null;
+    // }
+    // roundTimer = new TimedEvent(15, () -> {
+    // sendMessage(null, "Times up!");
+    // updatePhase(Phase.OUTCOME);
+    // roundTimer = new TimedEvent(15, () -> {
+    // sendMessage(null, "Times up!");
+    // });
+    // });
+    // }
 
     // private synchronized void outPlayer() {
-    //     players.values().stream().forEach(p -> p.setSkipped(true));
-    //     updatePhase(Phase.OUTCOME);
+    // players.values().stream().forEach(p -> p.setSkipped(true));
+    // updatePhase(Phase.OUTCOME);
     // }
 
     private synchronized void resetSession() {
