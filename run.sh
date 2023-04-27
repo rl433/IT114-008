@@ -8,4 +8,5 @@ then
     # In Milestone3 changes Client to ClientUI
 else
 	echo "Must specify client or server"
+
 fi
