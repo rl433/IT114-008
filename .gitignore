@@ -1,7 +1,0 @@
-config.*
-*.log
-*.confi
-
-.vscode
-.DS_store
-*.class
