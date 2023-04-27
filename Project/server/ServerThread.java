@@ -250,6 +250,10 @@ public class ServerThread extends Thread {
             case CHOICE:
                 ((GameRoom) currentRoom).setChoice(p.getMessage(),myClientId);
                 break;
+
+            case OUT:
+                ((GameRoom) currentRoom).setSkipped(myClientId);
+                break;
             default:
                 break;
 

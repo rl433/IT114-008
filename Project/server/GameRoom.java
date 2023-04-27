@@ -85,6 +85,12 @@ public class GameRoom extends Room {
         }
     }
 
+    /*
+     * rl433
+     * 4/20/23
+     * Method called start that syncs with the picking phase
+     * as well as tells the users that the game started and is counting down
+     */
     private synchronized void start() {
         updatePhase(Phase.PICKING);
         // TODO only do this if it's the first round
@@ -97,6 +103,16 @@ public class GameRoom extends Room {
 
     }
 
+    /*
+     * rl433
+     * 4/15/23
+     * Methods called timeExpired that updates phase to outcome
+     * then for every player in serverplayer
+     * if that player is not ready or player has not choice
+     * set the player to skipping his turn true because of setskipped being a boolean
+     * then send a message to everyone that the player skipped his turn due to timeout
+     * if player is ready or player has a choice then skip and go to outcome method
+     */
     protected void timeExpired() {
         updatePhase(Phase.OUTCOME);
         for (ServerPlayer player : players.values()) {
@@ -125,6 +141,16 @@ public class GameRoom extends Room {
     // players.values().stream().filter(p -> p.isReady()).findFirst().orElse(null));
     // }
     // }
+    /*
+     * rl433
+     * 4/20/23
+     * Method called checkOutcome which is an int that takes two strings in the parameters
+     * string a and b are players choices and it goes into an if statement
+     * if a and b equal each other then return 0
+     * else if a equals R and b equals S or a equals S and B equals P or a equals P and b equals R return 1
+     * else return -1
+     * We return to show if there are winners, ties, or losers
+     */
     private int checkOutcome(String a, String b) {
         if (a.equals(b)) {
             return 0;
@@ -137,6 +163,12 @@ public class GameRoom extends Room {
         }
     }
 
+    /*
+     * rl433
+     * 4/20/23
+     * Showing outcome method that is the game logic.
+     * Filters out skipped, active, and remaining players
+     */
     protected void outcome() {
         // deal with skipped players first
         List<ServerPlayer> skipped = players.values().stream().filter(p -> p.getChoice() == null || p.getChoice().length() == 0
@@ -165,6 +197,13 @@ public class GameRoom extends Room {
                 // important codes
                 // players.values().filter(p->p.isReady()).forEach(p->P.setChoice(""));
                 // players.values().filter(p->p.isReady()).forEach(p->{p.setChoice(""));p.setIsOut(false)};
+                /*
+                 * rl433
+                 * 4/22/23
+                 * has int outcome which equals checkoutcome method for each players choices
+                 * using an if statement that sends a message to all players that have tied, won, or lost doing their play
+                 * then for the wins and lose, the player who lost is set to out which is a boolean statement.
+                 */
                 logger.info(String.format("%s PlayerA %s vs PlayerB %s %s", Constants.ANSI_BLUE, playerA.getChoice(),
                         playerB.getChoice(), Constants.ANSI_RESET));
                 int outcome = checkOutcome(playerA.getChoice(), playerB.getChoice());
@@ -185,15 +224,11 @@ public class GameRoom extends Room {
                     // TODO fix message show player A and Player B, their choices, and the result
                     sendMessage(null,
                             "Player: " + playerB.getClient().getClientName() + " wins with " + playerB.getChoice() + " against Player: " +
-                            playerA.getClient().getClientName() + "that chose " + playerA.getChoice());
+                            playerA.getClient().getClientName() + " that chose " + playerA.getChoice());
                             playerA.setOut(true);
                 }
         
             }
-        if (active.size() == 0) {
-            sendMessage(null, "There are no more players.");
-
-        }
 
             /*
              * if (playerA.getChoice().equals("R")) {
@@ -260,6 +295,13 @@ public class GameRoom extends Room {
              */    
 
         }
+        /*
+         * rl433
+         * 4/20/23
+         * Shows if remaining Players equals one then there is a winner
+         * if equals zero then all players tied
+         * and if remain players is greater then 1, then there are no winners and the game restarts
+         */
         List<ServerPlayer> remainingPlayers = players.values().stream().filter(p -> {
             return p.isReady() && !p.isSkipped() && p.isNotOut();
         }).toList();
@@ -271,11 +313,14 @@ public class GameRoom extends Room {
         }
 
         else if (remainingPlayers.size() == 0) {
-            sendMessage(null, "All players have tied.");
+            if (skipped.size() >= 1) {
+                sendMessage(null, skipped.size() + " players skipped this turn and there are no more remaining winners.");
+            } else {
+                sendMessage(null, "All players have tied.");
+            }
             resetSession();
-        } if (skipped.size() > 1) {
-            sendMessage(null, "Player: " + skipped.getClient().getClientName() + " skipped his turn.");
         }
+    
 
         else if (remainingPlayers.size() > 1) {
             sendMessage(null, "Since there is no one winner, the game will start again.");
@@ -299,6 +344,8 @@ public class GameRoom extends Room {
     protected void setSkipped(long clientId) {
         ServerPlayer sp = players.get(clientId);
         sp.setSkipped(true);
+        sp.setChoice("skip");
+        sendMessage(null, "Player: " + sp.getClient().getClientName() + " skipped his turn.");
         //sendMessage(null, "Player: " + sp.getClient().getClientName() + " skipped his turn.");
         // ???
         /*
@@ -328,6 +375,12 @@ public class GameRoom extends Room {
     // updatePhase(Phase.OUTCOME);
     // }
 
+    /*
+     * rl433
+     * 4/20/23
+     * A method called resetSession that would synchronize to phase Ready
+     * that sends a message to the server telling the clients on how to restart when game is over
+     */
     private synchronized void resetSession() {
         players.values().stream().forEach(p -> p.setReady(false));
         updatePhase(Phase.READY);
@@ -363,6 +416,15 @@ public class GameRoom extends Room {
         }
     }
 
+    /*
+     * rl433
+     * 4/23/23
+     * Methods called syncReadyStatues
+     * Using iterator to get each player
+     * while loop that uses iterator for every player
+     * success is boolean that is for every client that is ready
+     * if successs is not true then go to handleDisconnect
+     */
     private void syncReadyStatus(long clientId) {
         Iterator<ServerPlayer> iter = players.values().stream().iterator();
         while (iter.hasNext()) {
