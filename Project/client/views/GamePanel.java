@@ -8,7 +8,9 @@ import java.awt.GridLayout;
 import java.io.IOException;
 import java.util.logging.Logger;
 
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
+import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
@@ -16,6 +18,7 @@ import Project.client.Client;
 import Project.client.IClientEvents;
 import Project.common.Constants;
 import Project.common.Phase;
+import Project.common.TimedEvent;
 
 public class GamePanel extends JPanel implements IClientEvents {
 
@@ -25,13 +28,20 @@ public class GamePanel extends JPanel implements IClientEvents {
     GamePanel self;
     JPanel gridLayout;
     JPanel readyCheck;
-
+    UserListPanel ulp;
+    TimedEvent currentTimer;
+    JLabel timeLabel = new JLabel("");
+    Phase currentPhase;
     public GamePanel() {
         gridLayout = new JPanel();
         buildReadyCheck();
-        this.setLayout(new BorderLayout());
-        this.add(gridLayout, BorderLayout.CENTER);
-        this.add(readyCheck, BorderLayout.SOUTH);
+        this.setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+        timeLabel.setName("time");
+        Dimension td = new Dimension(this.getWidth(), 30);
+        timeLabel.setMaximumSize(td);
+        timeLabel.setPreferredSize(td);
+        this.add(timeLabel);
+        this.add(readyCheck);
         self = this;
         Client.INSTANCE.addListener(this);
         this.setFocusable(true);
@@ -39,6 +49,9 @@ public class GamePanel extends JPanel implements IClientEvents {
 
     }
 
+    public void setUserListPanel(UserListPanel ulp) {
+        this.ulp = ulp;
+    }
     private void buildReadyCheck() {
         if (readyCheck == null) {
             readyCheck = new JPanel();
@@ -119,14 +132,24 @@ public class GamePanel extends JPanel implements IClientEvents {
 
     @Override
     public void onReceiveReady(long clientId) {
-
+        if (currentTimer == null) {
+            currentTimer = new TimedEvent(30, () -> {
+                currentTimer = null;
+            });
+            currentTimer.setTickCallback((time) -> {
+                timeLabel.setText("Remaining: " + time);
+            });
+        }
     }
 
     @Override
     public void onReceiveReadyCount(long count) {
         logger.info(
                 Constants.ANSI_BRIGHT_BLUE + String.format("Received ready count %s", count) + Constants.ANSI_RESET);
-
+        if (currentTimer != null && count == 0) {
+            currentTimer.cancel();
+            currentTimer = null;
+        }
         if (readyCheck != null) {
             for (Component c : readyCheck.getComponents()) {
                 if (c.getName().equalsIgnoreCase("readyText")) {
@@ -142,28 +165,33 @@ public class GamePanel extends JPanel implements IClientEvents {
     @Override
     public void onReceivePhase(Phase phase) {
         logger.info(Constants.ANSI_BRIGHT_BLUE + String.format("Received phase %s", phase) + Constants.ANSI_RESET);
+        currentPhase = phase;
+        Dimension td = new Dimension(this.getWidth(), 30);
+        timeLabel.setMaximumSize(td);
+        timeLabel.setPreferredSize(td);
         if (phase == Phase.READY) {
             readyCheck.setVisible(true);
             gridLayout.setVisible(false);
-        } else if (phase == Phase.PICKING) {
-            readyCheck.setVisible(false);
-            gridLayout.setVisible(true);
+        }
+
+        // if (phase != Phase.READY) {
+        if (currentTimer != null) {
+            currentTimer.cancel();
+            currentTimer = null;
+        }
+        // }
+        if (phase != Phase.READY) {
+            currentTimer = new TimedEvent(15, () -> {
+                currentTimer = null;
+            });
+            currentTimer.setTickCallback((time) -> {
+                timeLabel.setText("Remaining: " + time);
+            });
         }
         this.validate();
         this.repaint();
         logger.info(
                 Constants.ANSI_BRIGHT_MAGENTA + String.format("Dimension %s", this.getSize()) + Constants.ANSI_RESET);
-    }
-
-    @Override
-    public void onReceiveSeeker(long clientId) {
-        // TODO Auto-generated method stub
-        // throw new UnsupportedOperationException("Unimplemented method
-        // 'onReceiveSeeker'");
-    }
-
-    @Override
-    public void onReceiveHide(int x, int y, long clientId) {
     }
 
     @Override
@@ -173,13 +201,10 @@ public class GamePanel extends JPanel implements IClientEvents {
         // 'onReceiveOut'");
     }
 
-    
-
     @Override
     public void onReceivePoints(long clientId, int points) {
-        // TODO Auto-generated method stub
-        // throw new UnsupportedOperationException("Unimplemented method
-        // 'onReceivePoints'");
+        if (ulp != null) {
+            ulp.setPointsForPlayer(clientId, points);
+        }
     }
-
 }

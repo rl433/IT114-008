@@ -282,20 +282,6 @@ public class ClientUI extends JFrame implements IClientEvents, ICardControls {
     }
 
     @Override
-    public void onReceiveSeeker(long clientId) {
-        // TODO Auto-generated method stub
-        // throw new UnsupportedOperationException("Unimplemented method
-        // 'onReceiveSeeker'");
-    }
-
-    @Override
-    public void onReceiveHide(int x, int y, long clientId) {
-        // TODO Auto-generated method stub
-        // throw new UnsupportedOperationException("Unimplemented method
-        // 'onReceiveHide'");
-    }
-
-    @Override
     public void onReceiveOut(long clientId) {
         // TODO Auto-generated method stub
         // throw new UnsupportedOperationException("Unimplemented method

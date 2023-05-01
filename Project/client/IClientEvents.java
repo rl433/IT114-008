@@ -75,10 +75,6 @@ public interface IClientEvents {
 
     void onReceivePhase(Phase phase);
 
-    void onReceiveSeeker(long clientId);
-
-    void onReceiveHide(int x, int y, long clientId);
-
     void onReceiveOut(long clientId);
 
     void onReceivePoints(long clientId, int points);

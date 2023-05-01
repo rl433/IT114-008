@@ -12,6 +12,7 @@
 ./client/views/RoomListItem.java
 ./client/views/RoomsPanel.java
 ./client/views/UserInputPanel.java
+./client/views/UserListItem.java
 ./client/views/UserListPanel.java
 ./common/Constants.java
 ./common/Payload.java

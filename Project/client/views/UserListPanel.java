@@ -114,4 +114,17 @@ public class UserListPanel extends JPanel {
             userListArea.remove(c);
         }
     }
+
+    public void setPointsForPlayer(long clientId, long points) {
+        Component[] cs = userListArea.getComponents();
+        for (Component c : cs) {
+            if (c instanceof UserListItem) {
+                UserListItem u = (UserListItem) c;
+                if (u.getClientId() == clientId) {
+                    u.setPoints(points);
+                    break;
+                }
+            }
+        }
+    }
 }
