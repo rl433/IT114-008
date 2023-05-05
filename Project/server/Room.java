@@ -7,6 +7,7 @@ import java.util.logging.Logger;
 
 import Project.common.Constants;
 import Project.server.ServerThread;
+import Project.common.PointsPayload;
 
 public class Room implements AutoCloseable {
     // server is a singleton now so we don't need this

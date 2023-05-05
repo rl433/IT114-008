@@ -11,6 +11,7 @@ import java.util.Queue;
 import java.util.logging.Logger;
 
 import Project.common.Constants;
+import Project.common.PointsPayload;
 
 public enum Server {
     INSTANCE;

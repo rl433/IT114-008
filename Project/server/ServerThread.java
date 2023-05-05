@@ -4,13 +4,16 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.concurrent.ExecutionException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 
 import Project.common.Constants;
 import Project.common.Payload;
 import Project.common.PayloadType;
 import Project.common.Phase;
+import Project.common.PointsPayload;
 import Project.common.RoomResultPayload;
 
 /**
@@ -43,7 +46,8 @@ public class ServerThread extends Thread {
         logger.info("ServerThread created");
         // get communication channels to single client
         this.client = myClient;
-        this.currentRoom = room;
+        // this.currentRoom = room;
+        setCurrentRoom(room);
 
     }
 
@@ -66,6 +70,7 @@ public class ServerThread extends Thread {
     protected synchronized void setCurrentRoom(Room room) {
         if (room != null) {
             currentRoom = room;
+            sendRoomName(room.getName());
         } else {
             logger.info("Passed in room was null, this shouldn't happen");
         }
@@ -79,10 +84,36 @@ public class ServerThread extends Thread {
     }
 
     // send methods
+    public boolean sendPoints(long clientId, int points) {
+        PointsPayload pp = new PointsPayload();
+        pp.setPayloadType(PayloadType.POINTS);
+        pp.setClientId(clientId);
+        pp.setPoints(points);
+        return send(pp);
+    }
+
+    /**
+     * 
+     * @param clientId if -1 will reset client's data, else marks player out
+     * @return
+     */
+    public boolean sendOut(long clientId) {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.OUT);
+        p.setClientId(clientId);
+        return send(p);
+    }
+
     public boolean sendPhaseSync(Phase phase) {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.PHASE);
         p.setMessage(phase.name());
+        return send(p);
+    }
+
+    public boolean sendResetReadyCount() {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.RESET_READY);
         return send(p);
     }
 
@@ -138,25 +169,28 @@ public class ServerThread extends Thread {
         return send(p);
     }
 
-    /*
-     * rl433
-     * 4/1/23
-     * Created a boolean statement for skip
-     * that is going to send it to payload
-     */
-    public boolean sendSkip(long clientId) {
-        Payload p = new Payload();
-        p.setPayloadType(PayloadType.SKIP);
-        return send(p);
-    }
-
-    
     public boolean sendConnectionStatus(long clientId, String who, boolean isConnected) {
         Payload p = new Payload();
         p.setPayloadType(isConnected ? PayloadType.CONNECT : PayloadType.DISCONNECT);
         p.setClientId(clientId);
         p.setClientName(who);
         p.setMessage(String.format("%s the room %s", (isConnected ? "Joined" : "Left"), currentRoom.getName()));
+        return send(p);
+    }
+
+    public boolean sendChoiceStatus(String choice, long clientId) {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.CHOICE);
+        p.setChoice(choice);
+        p.setClientId(clientId);
+        p.getClientId();
+        return send(p);
+    }
+
+    public boolean sendSpectatorStatus(long clientId) {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.SPECTATOR);
+        p.setClientId(clientId);
         return send(p);
     }
 
@@ -186,6 +220,7 @@ public class ServerThread extends Thread {
         try (ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
                 ObjectInputStream in = new ObjectInputStream(client.getInputStream());) {
             this.out = out;
+            logger.info("Listening for Client Payloads");
             isRunning = true;
             Payload fromClient;
             while (isRunning && // flag to let us easily control the loop
@@ -199,7 +234,9 @@ public class ServerThread extends Thread {
             } // close while loop
         } catch (Exception e) {
             // happens when client disconnects
+            System.out.println(Constants.ANSI_BRIGHT_RED);
             e.printStackTrace();
+            System.out.println(Constants.ANSI_RESET);
             logger.info("Client disconnected");
         } finally {
             isRunning = false;
@@ -242,17 +279,21 @@ public class ServerThread extends Thread {
                     e.printStackTrace();
                 }
                 break;
-                /*
-                 * rl433
-                 * 4/6/23
-                 * Creating a case choice which will set the choice of the client
-                 */
             case CHOICE:
-                ((GameRoom) currentRoom).setChoice(p.getMessage(),myClientId);
+                try {
+                    ((GameRoom) currentRoom).setChoiceStatus(p.getChoice(), myClientId);
+                } catch (Exception e) {
+                    logger.severe(String.format("There was a problem during choice %s", e.getMessage()));
+                    e.printStackTrace();
+                }
                 break;
-
-            case OUT:
-                ((GameRoom) currentRoom).setSkipped(myClientId);
+            case SPECTATOR:
+                try {
+                    ((GameRoom) currentRoom).setSpectator(this);
+                } catch (Exception e) {
+                    logger.severe(String.format("There was a problem during Spectator %s", e.getMessage()));
+                    e.printStackTrace();
+                }
                 break;
             default:
                 break;
