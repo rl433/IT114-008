@@ -98,6 +98,8 @@ public class GameRoom extends Room {
         players.values().stream().forEach(p -> {
             p.setOut(false);
             p.setPoints(0);
+            p.setChoice(null);
+            p.setSkipped(false);
         });
         // players.values().stream().forEach(p -> p.setSetIsOut(false));
         // pickRandom();
@@ -210,6 +212,7 @@ public class GameRoom extends Room {
                  */
                 logger.info(String.format("%s PlayerA %s vs PlayerB %s %s", Constants.ANSI_BLUE, playerA.getChoice(),
                         playerB.getChoice(), Constants.ANSI_RESET));
+                int winpoints = 0;
                 int outcome = checkOutcome(playerA.getChoice(), playerB.getChoice());
                 if (outcome == 0) {
                     // tied
@@ -224,7 +227,8 @@ public class GameRoom extends Room {
                             "Player: " + playerA.getClient().getClientName() + " wins with " + playerA.getChoice() + " against Player: " +
                             playerB.getClient().getClientName() + " that chose " + playerB.getChoice());
                     playerB.setOut(true);
-                    syncPoints(playerA.getClient().getClientId(), 1);
+                    winpoints++;
+                    syncPoints(playerA.getClient().getClientId(), winpoints);
                 } else {
                     // A lost
                     // TODO fix message show player A and Player B, their choices, and the result
@@ -232,7 +236,8 @@ public class GameRoom extends Room {
                             "Player: " + playerB.getClient().getClientName() + " wins with " + playerB.getChoice() + " against Player: " +
                             playerA.getClient().getClientName() + " that chose " + playerA.getChoice());
                     playerA.setOut(true);
-                    syncPoints(playerB.getClient().getClientId(), 1);
+                    winpoints++;
+                    syncPoints(playerB.getClient().getClientId(), winpoints);
                 }
         
             }
@@ -366,12 +371,14 @@ public class GameRoom extends Room {
         Iterator<ServerPlayer> iter = players.values().stream().iterator();
         while(iter.hasNext()) {
             ServerPlayer client = iter.next();
+            client = iter.next();
             boolean success = client.getClient().sendPoints(clientId, points);
             if (!success) {
                 handleDisconnect(client);
             }
         }
     }
+
     public void syncSpectatorStatus(long clientId) {
         Iterator<ServerPlayer> iter = players.values().stream().iterator();
         while (iter.hasNext()) {
@@ -382,6 +389,7 @@ public class GameRoom extends Room {
             }
         }
     }
+    
     public void setSpectator(ServerThread client) {
         logger.info("Spectator check");
         if (currentPhase != Phase.READY) {
@@ -427,12 +435,12 @@ public class GameRoom extends Room {
      * that sends a message to the server telling the clients on how to restart when game is over
      */
     private synchronized void resetSession() {
-        players.values().stream().forEach(p -> p.setReady(false));
-        updatePhase(Phase.READY);
-        sendMessage(null, "Session ended, please intiate ready check to begin a new one");
         players.values().stream().forEach(p -> {
+            p.setReady(false);
             p.setPoints(0);
         });
+        updatePhase(Phase.READY);
+        sendMessage(null, "Session ended, please intiate ready check to begin a new one");
     }
 
     private void updatePhase(Phase phase) {
@@ -459,6 +467,10 @@ public class GameRoom extends Room {
             logger.info(String.format("Total clients %s", clients.size()));
             sendMessage(null, player.getClient().getClientName() + " disconnected");
             if (players.isEmpty()) {
+                if(roundTimer != null) {
+                    roundTimer.cancel();
+                    roundTimer = null;
+                }
                 close();
             }
         }
@@ -484,4 +496,35 @@ public class GameRoom extends Room {
         }
     }
 
+    private synchronized void syncSessionData() {
+        try {
+            Iterator<ServerPlayer> inner = players.values().stream().iterator();
+            while (inner.hasNext()) {
+                ServerPlayer innerPlayer = inner.next();
+                boolean success = innerPlayer.getClient().sendOut(Constants.DEFAULT_CLIENT_ID);
+                if (!success) {
+                    inner.remove();
+                    handleDisconnect(innerPlayer);
+                    continue;
+                }
+            }
+            Iterator<ServerPlayer> outer = players.values().stream().iterator();
+            while (outer.hasNext()) {
+                ServerPlayer outerPlayer = outer.next();
+                inner = players.values().stream().iterator();
+                while (inner.hasNext()) {
+                    ServerPlayer innerPlayer = inner.next();
+                    boolean success = innerPlayer.getClient().sendPoints(outerPlayer.getClient().getClientId(),
+                            outerPlayer.getPoints());
+                    if (!success) {
+                        inner.remove();
+                        handleDisconnect(innerPlayer);
+                        continue;
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

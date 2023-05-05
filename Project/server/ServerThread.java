@@ -85,11 +85,11 @@ public class ServerThread extends Thread {
 
     // send methods
     public boolean sendPoints(long clientId, int points) {
-        PointsPayload p = new PointsPayload();
-        p.setPayloadType(PayloadType.POINTS);
-        p.setClientId(clientId);
-        p.setPoints(points);
-        return send(p);
+        PointsPayload pp = new PointsPayload();
+        pp.setPayloadType(PayloadType.POINTS);
+        pp.setClientId(clientId);
+        pp.setPoints(points);
+        return send(pp);
     }
 
     /**

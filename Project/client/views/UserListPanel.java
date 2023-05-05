@@ -18,6 +18,7 @@ import javax.swing.undo.CompoundEdit;
 
 import Project.client.ClientUtils;
 import Project.client.ICardControls;
+import Project.client.views.UserListItem;
 
 public class UserListPanel extends JPanel {
     JPanel userListArea;
@@ -68,10 +69,13 @@ public class UserListPanel extends JPanel {
     protected void resizeUserListItems() {
         for (Component p : userListArea.getComponents()) {
             if (p.isVisible()) {
-                p.setPreferredSize(
-                        new Dimension(wrapper.getWidth(), ClientUtils.calcHeightForText(this,
-                                ((JEditorPane) p).getText(), wrapper.getWidth())));
-                p.setMaximumSize(p.getPreferredSize());
+                // p.setPreferredSize(
+                //         new Dimension(wrapper.getWidth(), ClientUtils.calcHeightForText(this,
+                //                 ((JEditorPane) p).getText(), wrapper.getWidth())));
+                // p.setMaximumSize(p.getPreferredSize());
+                Dimension newSize = new Dimension(wrapper.getWidth(), 30);
+                p.setPreferredSize(newSize);
+                p.setMaximumSize(newSize);
             }
         }
         userListArea.revalidate();
@@ -82,29 +86,35 @@ public class UserListPanel extends JPanel {
         logger.log(Level.INFO, "Adding user to list: " + clientName);
         JPanel content = userListArea;
         logger.log(Level.INFO, "Userlist: " + content.getSize());
-        JEditorPane textContainer = new JEditorPane("text/plain", clientName);
-        textContainer.setName(clientId + "");
-        // sizes the panel to attempt to take up the width of the container
-        // and expand in height based on word wrapping
-        textContainer.setLayout(null);
-        textContainer.setPreferredSize(
-                new Dimension(content.getWidth(), ClientUtils.calcHeightForText(this, clientName, content.getWidth())));
-        textContainer.setMaximumSize(textContainer.getPreferredSize());
-        textContainer.setEditable(false);
-        // remove background and border (comment these out to see what it looks like
-        // otherwise)
-        ClientUtils.clearBackground(textContainer);
+        UserListItem uli = new UserListItem(clientName, clientId);
+        Dimension newSize = new Dimension(wrapper.getWidth(), 30);
+        uli.setPreferredSize(newSize);
+        uli.setMaximumSize(newSize);
+        // textContainer.setName(clientId + "");
+        // // sizes the panel to attempt to take up the width of the container
+        // // and expand in height based on word wrapping
+        // textContainer.setLayout(null);
+        // textContainer.setPreferredSize(
+        //         new Dimension(content.getWidth(), ClientUtils.calcHeightForText(this, clientName, content.getWidth())));
+        // textContainer.setMaximumSize(textContainer.getPreferredSize());
+        // //textContainer.setEditable(false);
+        // // remove background and border (comment these out to see what it looks like
+        // // otherwise)
+        // ClientUtils.clearBackground(textContainer);
         // add to container
-        content.add(textContainer);
+        content.add(uli);
     }
 
     protected void removeUserListItem(long clientId) {
         logger.log(Level.INFO, "removing user list item for id " + clientId);
         Component[] cs = userListArea.getComponents();
         for (Component c : cs) {
-            if (c.getName().equals(clientId + "")) {
-                userListArea.remove(c);
-                break;
+            if (c instanceof UserListItem) {
+                UserListItem u = (UserListItem) c;
+                if (c.getName().equals(clientId + "")) {
+                    userListArea.remove(c);
+                    break;
+                }
             }
         }
     }

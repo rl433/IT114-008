@@ -84,7 +84,7 @@ public class ClientUI extends JFrame implements IClientEvents, ICardControls {
         gamePanel.setPreferredSize(new Dimension((int) (this.getWidth() * .5), (int) this.getHeight()));
         gamePanel.setMinimumSize(gamePanel.getPreferredSize());
         chatPanel.add(gamePanel, BorderLayout.WEST);
-
+        
         // https://stackoverflow.com/a/9093526
         // this tells the x button what to do (updated to be controlled via a prompt)
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);

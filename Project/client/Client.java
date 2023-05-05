@@ -99,6 +99,10 @@ public enum Client {
         listeners.add(listener);
     }
 
+    public void removeListener(IClientEvents listener) {
+        listeners.remove(listener);
+    }
+
     /**
      * <p>
      * Check if the string contains the <i>connect</i> command
@@ -401,11 +405,11 @@ public enum Client {
                 break;
             case POINTS:
                 try {
-                    PointsPayload pts = (PointsPayload) p;
+                    PointsPayload pp = (PointsPayload) p;
                     if (players.containsKey(p.getClientId())) { 
-                        players.get(p.getClientId()).setPoints(pts.getPoints());
+                        players.get(p.getClientId()).setPoints(pp.getPoints());
                     }
-                    listeners.forEach(l -> l.onReceivePoints(pts.getClientId(), pts.getPoints()));
+                    listeners.forEach(l -> l.onReceivePoints(pp.getClientId(), pp.getPoints()));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

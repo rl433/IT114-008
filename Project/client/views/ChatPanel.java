@@ -171,6 +171,10 @@ public class ChatPanel extends JPanel {
         });
     }
 
+    public UserListPanel getUserListPanel() {
+        return userListPanel;
+    }
+
     private void doResize() {
         if (!this.isVisible()) {
             return;
