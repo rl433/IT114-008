@@ -14,6 +14,7 @@ import javax.swing.JEditorPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.undo.CompoundEdit;
 
 import Project.client.ClientUtils;
 import Project.client.ICardControls;
@@ -122,6 +123,19 @@ public class UserListPanel extends JPanel {
                 UserListItem u = (UserListItem) c;
                 if (u.getClientId() == clientId) {
                     u.setPoints(points);
+                    break;
+                }
+            }
+        }
+    }
+
+    public void setSpectatorPlayer(long clientId, boolean isSpectator) {
+        Component[] cs = userListArea.getComponents();
+        for (Component c : cs) {
+            if (c instanceof UserListItem) {
+                UserListItem u = (UserListItem) c;
+                if (u.getClientId() == clientId) {
+                    u.setSpectator(clientId);
                     break;
                 }
             }

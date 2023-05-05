@@ -33,6 +33,7 @@ public enum Client {
     private String clientName = "";
     private long myClientId = Constants.DEFAULT_CLIENT_ID;
     private static Logger logger = Logger.getLogger(Client.class.getName());
+    private boolean isSpectator = false;
 
     //private Hashtable<Long, String> userList = new Hashtable<Long, String>();
     private ConcurrentHashMap<Long, Player> players = new ConcurrentHashMap<Long, Player>();
@@ -77,6 +78,10 @@ public enum Client {
             e.printStackTrace();
         }
         return isConnected();
+    }
+
+    public boolean getIsSpectator() {
+        return isSpectator;
     }
 
     public boolean isCurrentPhase(Phase phase) {
@@ -159,16 +164,16 @@ public enum Client {
         return false;
     }
 
-    protected void sendSkipStatus() throws IOException {
+    public void sendSkipStatus() throws IOException {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.OUT);
         out.writeObject(p);
     }
 
-    protected void sendChoiceStatus(String choice) throws IOException {
+    public void sendChoiceStatus(String choice) throws IOException {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.CHOICE);
-        p.setMessage(choice);
+        p.setChoice(choice);
         out.writeObject(p);
     }
 
@@ -218,6 +223,12 @@ public enum Client {
         p.setPayloadType(PayloadType.MESSAGE);
         p.setMessage(message);
         p.setClientName(clientName);
+        out.writeObject(p);
+    }
+
+    public void sendSpectatorStatus() throws IOException {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.SPECTATOR);
         out.writeObject(p);
     }
 
@@ -369,13 +380,32 @@ public enum Client {
                 }
                 listeners.forEach(l -> l.onReceiveOut(p.getClientId()));
                 break;
+            case CHOICE:
+                try {
+                    logger.info(String.format(Constants.ANSI_BRIGHT_MAGENTA + "Player %s chose %s", p.getClientId(), p.getChoice())
+                                + Constants.ANSI_RESET);
+                } catch (Exception e) {
+                    logger.severe(Constants.ANSI_RED + String.format("Error handling position payload: %s", e)
+                                + Constants.ANSI_RESET);
+                }
+                break;
+            case SPECTATOR:
+            isSpectator = p.getClientId() == myClientId;
+                if(isSpectator) {
+                    logger.info(Constants.ANSI_BRIGHT_YELLOW + String.format("Player %s is a spectator", getClientNameById(p.getClientId()))
+                                + Constants.ANSI_RESET);
+                } else {
+                    logger.info(Constants.ANSI_GREEN + getClientNameById(p.getClientId()) + " is spectating" + Constants.ANSI_RESET);
+                }
+                listeners.forEach(l -> l.onReceiveSpectator(p.getClientId(), isSpectator));
+                break;
             case POINTS:
                 try {
-                    PointsPayload pp = (PointsPayload) p;
+                    PointsPayload pts = (PointsPayload) p;
                     if (players.containsKey(p.getClientId())) { 
-                        players.get(p.getClientId()).setPoints(pp.getPoints());
+                        players.get(p.getClientId()).setPoints(pts.getPoints());
                     }
-                    listeners.forEach(l -> l.onReceivePoints(pp.getClientId(), pp.getPoints()));
+                    listeners.forEach(l -> l.onReceivePoints(pts.getClientId(), pts.getPoints()));
                 } catch (Exception e) {
                     e.printStackTrace();
                 }

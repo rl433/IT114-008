@@ -10,6 +10,7 @@ import Project.common.Constants;
 import Project.common.Phase;
 import Project.common.Player;
 import Project.common.TimedEvent;
+import Project.common.PointsPayload;
 
 public class GameRoom extends Room {
     Phase currentPhase = Phase.READY;
@@ -94,7 +95,10 @@ public class GameRoom extends Room {
     private synchronized void start() {
         updatePhase(Phase.PICKING);
         // TODO only do this if it's the first round
-        players.values().stream().forEach(p -> p.setOut(false));
+        players.values().stream().forEach(p -> {
+            p.setOut(false);
+            p.setPoints(0);
+        });
         // players.values().stream().forEach(p -> p.setSetIsOut(false));
         // pickRandom();
         // TODO example
@@ -182,7 +186,7 @@ public class GameRoom extends Room {
         //     }
         // });
         List<ServerPlayer> active = players.values().stream().filter(p -> p.isReady() && p.isNotOut() &&
-                !"skip".equals(p.getChoice())).toList();
+                !"skip".equals(p.getChoice()) && !p.isSpectator()).toList();
         logger.info(String.format("%s Outcome Active Players %s %s", Constants.ANSI_BRIGHT_MAGENTA, active.size(),
                 Constants.ANSI_RESET));
         if (active.size() > 1) {
@@ -211,21 +215,24 @@ public class GameRoom extends Room {
                     // tied
                     // TODO fix message show player A and Player B, their choices, and the result
                     sendMessage(null,
-                            "Players: " + playerA.getClient().getClientName() + " and " + playerB.getClient().getClientName() + " both tied with " + playerA.getChoice());
+                            "Players: " + playerA.getClient().getClientName() + " and " + playerB.getClient().getClientName() + " both tied with "
+                             + playerA.getChoice());
                 } else if (outcome == 1) {
                     // A won
                     // TODO fix message show player A and Player B, their choices, and the result
                     sendMessage(null,
                             "Player: " + playerA.getClient().getClientName() + " wins with " + playerA.getChoice() + " against Player: " +
                             playerB.getClient().getClientName() + " that chose " + playerB.getChoice());
-                            playerB.setOut(true);
+                    playerB.setOut(true);
+                    syncPoints(playerA.getClient().getClientId(), 1);
                 } else {
                     // A lost
                     // TODO fix message show player A and Player B, their choices, and the result
                     sendMessage(null,
                             "Player: " + playerB.getClient().getClientName() + " wins with " + playerB.getChoice() + " against Player: " +
                             playerA.getClient().getClientName() + " that chose " + playerA.getChoice());
-                            playerA.setOut(true);
+                    playerA.setOut(true);
+                    syncPoints(playerB.getClient().getClientId(), 1);
                 }
         
             }
@@ -334,7 +341,7 @@ public class GameRoom extends Room {
      * 4/6/23
      * setting the choices for the certain client
      */
-    protected void setChoice(String choice, long clientId) {
+    protected void setChoiceStatus(String choice, long clientId) {
         ServerPlayer sp = players.get(clientId);
         logger.info(String.format("%s ClientId %s chose %s %s", Constants.ANSI_BRIGHT_YELLOW, clientId,
                 choice, Constants.ANSI_RESET));
@@ -353,6 +360,44 @@ public class GameRoom extends Room {
          * players.values().stream().filter(ServerPlayer::isSkipped);
          * }
          */
+    }
+
+    public void syncPoints(long clientId, int points) {
+        Iterator<ServerPlayer> iter = players.values().stream().iterator();
+        while(iter.hasNext()) {
+            ServerPlayer client = iter.next();
+            boolean success = client.getClient().sendPoints(clientId, points);
+            if (!success) {
+                handleDisconnect(client);
+            }
+        }
+    }
+    public void syncSpectatorStatus(long clientId) {
+        Iterator<ServerPlayer> iter = players.values().stream().iterator();
+        while (iter.hasNext()) {
+            ServerPlayer client = iter.next();
+            boolean success = client.getClient().sendSpectatorStatus(clientId);
+            if (!success) {
+                handleDisconnect(client);
+            }
+        }
+    }
+    public void setSpectator(ServerThread client) {
+        logger.info("Spectator check");
+        if (currentPhase != Phase.READY) {
+            logger.warning((String.format("Spectator incorrect phase: ", Phase.READY.name())));
+            readyTimer.cancel();
+            readyTimer = null;
+            return;
+        }
+
+        ServerPlayer player = players.get(client.getClientId());
+        if (player != null) {
+            player.setSpectator(true);
+            logger.warning((String.format("Spectator incorrect phase: ", player.getClient().getClientName(), 
+                player.getClient().getClientId())));
+            syncSpectatorStatus(player.getClient().getClientId());
+        }
     }
 
     // serverplayer.getChoice(CHOICE);
@@ -385,6 +430,9 @@ public class GameRoom extends Room {
         players.values().stream().forEach(p -> p.setReady(false));
         updatePhase(Phase.READY);
         sendMessage(null, "Session ended, please intiate ready check to begin a new one");
+        players.values().stream().forEach(p -> {
+            p.setPoints(0);
+        });
     }
 
     private void updatePhase(Phase phase) {

@@ -4,6 +4,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -28,6 +29,8 @@ public class GamePanel extends JPanel implements IClientEvents {
     GamePanel self;
     JPanel gridLayout;
     JPanel readyCheck;
+    JPanel buttonsPanel = new JPanel(new FlowLayout());
+    private boolean isSpectator = false;
     UserListPanel ulp;
     TimedEvent currentTimer;
     JLabel timeLabel = new JLabel("");
@@ -47,6 +50,49 @@ public class GamePanel extends JPanel implements IClientEvents {
         this.setFocusable(true);
         this.setRequestFocusEnabled(true);
 
+        /*
+        * rl433
+        * 5/1/23
+        * Creating buttons for RPS and skip
+        */
+        JButton R = new JButton("Rock");
+        JButton P = new JButton("Paper");
+        JButton S = new JButton("Scissor");
+        JButton skipButton = new JButton("Skip");
+        buttonsPanel.add(R);
+        buttonsPanel.add(P);
+        buttonsPanel.add(S);
+        buttonsPanel.add(skipButton);
+        R.addActionListener((event) -> {
+            try {
+                Client.INSTANCE.sendChoiceStatus("R");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        P.addActionListener((event) -> {
+            try {
+                Client.INSTANCE.sendChoiceStatus("P");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        S.addActionListener((event) -> {
+            try {
+                Client.INSTANCE.sendChoiceStatus("S");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        skipButton.addActionListener((event) -> {
+            try {
+                Client.INSTANCE.sendSkipStatus();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        buttonsPanel.setPreferredSize(new Dimension(200, 70));
+        this.add(buttonsPanel, BorderLayout.WEST);
     }
 
     public void setUserListPanel(UserListPanel ulp) {
@@ -71,6 +117,19 @@ public class GamePanel extends JPanel implements IClientEvents {
                 }
             });
             readyCheck.add(jb, BorderLayout.SOUTH);
+
+            JButton spectatorButton = new JButton("Spectate Mode");
+            spectatorButton.addActionListener((event) -> {
+                if (!Client.INSTANCE.isCurrentPhase(Phase.READY)) {
+                    return;
+                }
+                try {
+                    Client.INSTANCE.sendSpectatorStatus();
+                } catch(IOException e) {
+                    e.printStackTrace();
+                }
+            });
+            readyCheck.add(spectatorButton, BorderLayout.WEST);
         }
     }
 
@@ -174,6 +233,12 @@ public class GamePanel extends JPanel implements IClientEvents {
             gridLayout.setVisible(false);
         }
 
+        if(Client.INSTANCE.getIsSpectator()) {
+            buttonsPanel.setVisible(false);
+        } else {
+            buttonsPanel.setVisible(true);
+        }
+
         // if (phase != Phase.READY) {
         if (currentTimer != null) {
             currentTimer.cancel();
@@ -192,6 +257,13 @@ public class GamePanel extends JPanel implements IClientEvents {
         this.repaint();
         logger.info(
                 Constants.ANSI_BRIGHT_MAGENTA + String.format("Dimension %s", this.getSize()) + Constants.ANSI_RESET);
+    }
+
+    public void onReceiveSpectator(long clientId, boolean isSpectator) {
+        logger.info("Receiving sepctator for client: " + clientId + ", Spectator: " + isSpectator);
+        if (ulp != null) {
+            ulp.setSpectatorPlayer(clientId, isSpectator);
+        }
     }
 
     @Override

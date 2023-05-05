@@ -46,6 +46,14 @@ public class Payload implements Serializable {
         this.clientId = clientId;
     }
 
+    private String choice;
+
+    public void setChoice(String choice) {
+        this.choice = choice;
+    }
+    public String getChoice() {
+        return choice;
+    }
     /**
      * rl433
      * 4/6/23

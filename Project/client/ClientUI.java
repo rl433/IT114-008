@@ -302,4 +302,11 @@ public class ClientUI extends JFrame implements IClientEvents, ICardControls {
         // 'onReceiveReadyCount'");
     }
 
+    @Override
+    public void onReceiveSpectator(long clientId, boolean isSpectator) {
+        //TODO Auto-generated method stub
+        //throw new UnsupportedOperationException("Unimplemented method
+        // 'onReceiveSpectator'");
+    }
+
 }
