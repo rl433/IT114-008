@@ -160,20 +160,21 @@ public enum Client {
              * created an else if statement that once /choice is typed by the user
              * it will show three choices R: rock, P: paper, S: scissors
              */
-        } else if (text.startsWith("/choice")) {
-            System.out.println("choice: R, P, S. skip to skip game");
-            text = text.replace("/choice ", "");
-            if (text.equalsIgnoreCase("R")) {
-                sendChoiceStatus("R");
-            } else if (text.equalsIgnoreCase("P")) {
-                sendChoiceStatus("P");
-            } else if (text.equalsIgnoreCase("S")) {
-                sendChoiceStatus("S");
-            }
-            return true;
-        } else if (text.equalsIgnoreCase("skip")) {
-            sendSkipStatus();
         }
+        // } else if (text.startsWith("/choice")) {
+        //     System.out.println("choice: R, P, S. skip to skip game");
+        //     text = text.replace("/choice ", "");
+        //     if (text.equalsIgnoreCase("R")) {
+        //         sendChoiceStatus("R");
+        //     } else if (text.equalsIgnoreCase("P")) {
+        //         sendChoiceStatus("P");
+        //     } else if (text.equalsIgnoreCase("S")) {
+        //         sendChoiceStatus("S");
+        //     }
+        //     return true;
+        // } else if (text.equalsIgnoreCase("skip")) {
+        //     sendSkipStatus();
+        // }
         return false;
     }
 

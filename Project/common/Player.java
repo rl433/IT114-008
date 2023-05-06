@@ -70,6 +70,16 @@ public class Player {
     public String getChoice() {
         return this.Hold;
     }
+
+    private String lastChoice;
+
+    public void setlastChoice(String lastChoice) {
+        this.lastChoice = lastChoice;
+    }
+
+    public String getlastChoice() {
+        return this.lastChoice;
+    }
     
     private int points = 0;
 

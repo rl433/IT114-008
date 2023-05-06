@@ -14,6 +14,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+import javax.swing.border.Border;
 
 import Project.client.Client;
 import Project.client.IClientEvents;
@@ -53,17 +54,21 @@ public class GamePanel extends JPanel implements IClientEvents {
         /*
         * rl433
         * 5/1/23
-        * Creating buttons for RPS and skip
+        * Creating buttons for RPS, skip, spectator, away, and two new options
         */
         JButton R = new JButton("Rock");
         JButton P = new JButton("Paper");
         JButton S = new JButton("Scissor");
+        JButton W = new JButton("Water");
+        JButton F = new JButton("Fire");
         JButton skipButton = new JButton("Skip");
         JButton spectatorButton = new JButton("Spectator");
         JButton awayButton = new JButton("Away");
         buttonsPanel.add(R);
         buttonsPanel.add(P);
         buttonsPanel.add(S);
+        buttonsPanel.add(W);
+        buttonsPanel.add(F);
         buttonsPanel.add(skipButton);
         buttonsPanel.add(awayButton);
         R.addActionListener((event) -> {
@@ -87,6 +92,20 @@ public class GamePanel extends JPanel implements IClientEvents {
                 e.printStackTrace();
             }
         });
+        W.addActionListener((event) -> {
+            try {
+                Client.INSTANCE.sendChoiceStatus("W");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        F.addActionListener((event) -> {
+            try {
+                Client.INSTANCE.sendChoiceStatus("F");
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
         skipButton.addActionListener((event) -> {
             try {
                 Client.INSTANCE.sendSkipStatus();
@@ -103,6 +122,7 @@ public class GamePanel extends JPanel implements IClientEvents {
         });
         buttonsPanel.setPreferredSize(new Dimension(200, 70));
         this.add(buttonsPanel, BorderLayout.WEST);
+        readyCheck.add(awayButton, BorderLayout.EAST);
     }
 
     public void setUserListPanel(UserListPanel ulp) {
@@ -243,6 +263,12 @@ public class GamePanel extends JPanel implements IClientEvents {
             gridLayout.setVisible(false);
         }
 
+        /*
+         * rl433
+         * 5/5/23
+         * If player is a spectator thier choice button doesn't show
+         * else the choice button with show
+         */
         if(Client.INSTANCE.getIsSpectator()) {
             buttonsPanel.setVisible(false);
         } else {

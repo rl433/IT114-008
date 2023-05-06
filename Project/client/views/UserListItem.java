@@ -30,6 +30,11 @@ public class UserListItem extends JPanel {
         this.clientName = clientName;
         // setBackground(Color.BLUE);
 
+        /*
+         * rl433
+         * 5/5/23
+         * Showing the dimensions for spectator and away
+         */
         Dimension d = new Dimension(30, 30);
         awayIndicator.setEnabled(false);
         awayIndicator.setVisible(false);
