@@ -59,10 +59,13 @@ public class GamePanel extends JPanel implements IClientEvents {
         JButton P = new JButton("Paper");
         JButton S = new JButton("Scissor");
         JButton skipButton = new JButton("Skip");
+        JButton spectatorButton = new JButton("Spectator");
+        JButton awayButton = new JButton("Away");
         buttonsPanel.add(R);
         buttonsPanel.add(P);
         buttonsPanel.add(S);
         buttonsPanel.add(skipButton);
+        buttonsPanel.add(awayButton);
         R.addActionListener((event) -> {
             try {
                 Client.INSTANCE.sendChoiceStatus("R");
@@ -87,6 +90,13 @@ public class GamePanel extends JPanel implements IClientEvents {
         skipButton.addActionListener((event) -> {
             try {
                 Client.INSTANCE.sendSkipStatus();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+        awayButton.addActionListener((event) -> {
+            try {
+                Client.INSTANCE.sendAwayStatus();
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -129,7 +139,7 @@ public class GamePanel extends JPanel implements IClientEvents {
                     e.printStackTrace();
                 }
             });
-            readyCheck.add(spectatorButton, BorderLayout.WEST);
+            readyCheck.add(spectatorButton, BorderLayout.NORTH);
         }
     }
 
@@ -263,6 +273,20 @@ public class GamePanel extends JPanel implements IClientEvents {
         logger.info("Receiving sepctator for client: " + clientId + ", Spectator: " + isSpectator);
         if (ulp != null) {
             ulp.setSpectatorPlayer(clientId, isSpectator);
+        }
+    }
+
+    /*
+     * rl433
+     * 5/4/23
+     * Override method for onreceive away
+     */
+    @Override
+    public void onReceiveAway(long clientId, boolean isAway) {
+        logger.info("Away triggered for client: " + clientId + ", away: " + isAway);
+        ulp.setAwayPlayer(clientId, isAway);
+        if (isAway) {
+            ulp.setSpectatorPlayer(clientId, true);
         }
     }
 

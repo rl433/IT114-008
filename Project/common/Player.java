@@ -8,6 +8,7 @@ public class Player {
     private boolean isSkipped = false;
     private boolean isOut = false;
     private boolean isSpectator = false;
+    private boolean isAway = false;
     private String Hold;
 
     public void setReady(boolean isReady) {
@@ -18,6 +19,14 @@ public class Player {
         return this.isReady;
     }
 
+    public void setAway(boolean isAway) {
+        this.isAway = isAway;
+    }
+
+    public boolean isAway() {
+        return isAway;
+    }
+    
     public void setSpectator(boolean isSpectator) {
         this.isSpectator = isSpectator;
     }

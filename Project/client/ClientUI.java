@@ -309,4 +309,8 @@ public class ClientUI extends JFrame implements IClientEvents, ICardControls {
         // 'onReceiveSpectator'");
     }
 
+    @Override
+    public void onReceiveAway(long clientId, boolean isAway) {
+        
+    }
 }

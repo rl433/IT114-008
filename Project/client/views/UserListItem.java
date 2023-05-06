@@ -19,9 +19,11 @@ public class UserListItem extends JPanel {
     private String clientName;
     private long points;
     private boolean isSpectator = false;
+    private boolean isAway = false;
     JEditorPane text = new JEditorPane("text/plain", "");
 
     JButton spectatorIndicator = new JButton("Specatator");
+    JButton awayIndicator = new JButton("Away");
 
     public UserListItem(String clientName, long clientId) {
         this.clientId = clientId;
@@ -29,14 +31,20 @@ public class UserListItem extends JPanel {
         // setBackground(Color.BLUE);
 
         Dimension d = new Dimension(30, 30);
+        awayIndicator.setEnabled(false);
+        awayIndicator.setVisible(false);
         spectatorIndicator.setEnabled(false);
         spectatorIndicator.setVisible(false);
         spectatorIndicator.setPreferredSize(d);
         spectatorIndicator.setMinimumSize(d);
         spectatorIndicator.setMaximumSize(d);
+        awayIndicator.setPreferredSize(d);
+        awayIndicator.setMinimumSize(d);
+        awayIndicator.setMaximumSize(d);
         text.setEditable(false);
         text.setText(getBaseText());
         this.add(spectatorIndicator);
+        this.add(awayIndicator);
         this.add(text);
         ClientUtils.clearBackground(text);
     }
@@ -67,6 +75,24 @@ public class UserListItem extends JPanel {
                 isSpectator = false;
                 logger.log(Level.INFO, "Checking third client: " + clientId + ", Spectating: " + isSpectator);
                 spectatorIndicator.setVisible(false);
+            }
+        }
+        revalidate();
+        repaint();
+    }
+
+    public void setAway(long clientId) {
+        logger.log(Level.INFO, "Checking client: " + clientId + ", Away: " + isAway);
+        if (this.clientId == clientId && clientId != Constants.DEFAULT_CLIENT_ID) {
+            if (!isAway) {
+                isAway = true;
+                logger.log(Level.INFO, "Checking second client: " + clientId + ", Away: " + isAway);
+                awayIndicator.setBackground(Color.ORANGE);
+                awayIndicator.setVisible(true);
+            } else {
+                isAway = false;
+                logger.log(Level.INFO, "Checking third client: " + clientId + ", Away: " + isAway);
+                awayIndicator.setVisible(false);
             }
         }
         revalidate();
