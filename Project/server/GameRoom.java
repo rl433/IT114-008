@@ -162,7 +162,12 @@ public class GameRoom extends Room {
             return 0;
         } else if ((a.equals("R") && b.equals("S"))
                 || (a.equals("S") && b.equals("P"))
-                || (a.equals("P") && b.equals("R"))) {
+                || (a.equals("P") && b.equals("R"))
+                || (a.equals("W") && b.equals("F"))
+                || (a.equals("W") && b.equals("P"))
+                || (a.equals("W") && b.equals("R"))
+                || (a.equals("F") && b.equals("P"))
+                || (a.equals("F") && b.equals("S"))) {
             return 1;
         } else {
             return -1;
@@ -177,9 +182,13 @@ public class GameRoom extends Room {
      */
     protected void outcome() {
         // deal with skipped players first
+        /*
+         * rl433
+         * 4/30/23
+         * Showing how players are skipped
+         */
         List<ServerPlayer> skipped = players.values().stream().filter(p -> p.getChoice() == null || p.getChoice().length() == 0
-            || "skip".equals(p.getChoice())).toList();
-
+            || "skip".equals(p.getChoice()) || p.isSpectator() || p.isAway() == true).toList();
         // players.values().forEach(p -> {
         //     if (p.getChoice() == null || p.getChoice().length() == 0 || "skip".equals(p.getChoice())) {
         //         p.setSkipped(true);
@@ -188,7 +197,7 @@ public class GameRoom extends Room {
         //     }
         // });
         List<ServerPlayer> active = players.values().stream().filter(p -> p.isReady() && p.isNotOut() &&
-                !"skip".equals(p.getChoice()) && !p.isSpectator()).toList();
+                !"skip".equals(p.getChoice()) && !p.isSpectator() && !p.isAway()).toList();
         logger.info(String.format("%s Outcome Active Players %s %s", Constants.ANSI_BRIGHT_MAGENTA, active.size(),
                 Constants.ANSI_RESET));
         if (active.size() > 1) {
@@ -199,7 +208,6 @@ public class GameRoom extends Room {
                     otherPlayer = 0;
                 }
                 ServerPlayer playerB = active.get(otherPlayer);
-    
                 // important codes
                 // players.values().filter(p->p.isReady()).forEach(p->P.setChoice(""));
                 // players.values().filter(p->p.isReady()).forEach(p->{p.setChoice(""));p.setIsOut(false)};
@@ -344,13 +352,20 @@ public class GameRoom extends Room {
     /*
      * rl433
      * 4/6/23
-     * setting the choices for the certain client
+     * setting the choices for the certain client as well as using last choice to get the last choice from 
+     * previous rounds so players can't use them again
      */
     protected void setChoiceStatus(String choice, long clientId) {
         ServerPlayer sp = players.get(clientId);
         logger.info(String.format("%s ClientId %s chose %s %s", Constants.ANSI_BRIGHT_YELLOW, clientId,
                 choice, Constants.ANSI_RESET));
-        sp.setHold(choice);
+        if (!sp.getClient().equals(sp.getlastChoice())) {
+            sp.setHold(choice);
+        } else if (sp.getChoice().equals(sp.getlastChoice())) {
+            sendMessage(null,
+                "Player: " + sp.getClient().getClientName() + " can't use " + sp.getlastChoice());
+        }
+        String lastChoice = sp.getlastChoice();
     }
 
     protected void setSkipped(long clientId) {
@@ -402,12 +417,37 @@ public class GameRoom extends Room {
         ServerPlayer player = players.get(client.getClientId());
         if (player != null) {
             player.setSpectator(true);
-            logger.warning((String.format("Spectator incorrect phase: ", player.getClient().getClientName(), 
+            logger.warning((String.format("Spectator incorrect phase: %s", player.getClient().getClientName(), 
                 player.getClient().getClientId())));
             syncSpectatorStatus(player.getClient().getClientId());
         }
     }
 
+    public void setAway(ServerThread client) {
+        logger.info("Away triggered");
+        if (currentPhase != Phase.PICKING) {
+            logger.warning(String.format("Away incorrect phase: %s", Phase.PICKING.name()));
+            return;
+        }
+        ServerPlayer player = players.get(client.getClientId());
+        if (player != null) {
+            player.setAway(true);
+            logger.info(String.format("Player [%s] is ready", player.getClient().getClientName(), player.getClient()
+                        .getClientId()));
+            syncAwayStatus(player.getClient().getClientId());
+        }
+     }
+
+     public void syncAwayStatus(long clientId) {
+        Iterator<ServerPlayer> iter = players.values().stream().iterator();
+        while (iter.hasNext()) {
+            ServerPlayer client = iter.next();
+            boolean success = client.getClient().sendAwayStatus(clientId);
+            if (!success) {
+                handleDisconnect(client);
+            }
+        }
+     }
     // serverplayer.getChoice(CHOICE);
     // private synchronized void startRound() {
     // if (roundTimer != null) {

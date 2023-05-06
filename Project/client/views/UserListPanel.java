@@ -151,4 +151,17 @@ public class UserListPanel extends JPanel {
             }
         }
     }
+
+    public void setAwayPlayer(long clientId, boolean isAway) {
+        Component[] cs = userListArea.getComponents();
+        for (Component c : cs) {
+            if (c instanceof UserListItem) {
+                UserListItem u = (UserListItem) c;
+                if (u.getClientId() == clientId) {
+                    u.setAway(clientId);
+                    break;
+                }
+            }
+        }
+    }
 }

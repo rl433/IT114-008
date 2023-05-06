@@ -34,6 +34,7 @@ public enum Client {
     private long myClientId = Constants.DEFAULT_CLIENT_ID;
     private static Logger logger = Logger.getLogger(Client.class.getName());
     private boolean isSpectator = false;
+    private boolean isAway = false;
 
     //private Hashtable<Long, String> userList = new Hashtable<Long, String>();
     private ConcurrentHashMap<Long, Player> players = new ConcurrentHashMap<Long, Player>();
@@ -78,6 +79,14 @@ public enum Client {
             e.printStackTrace();
         }
         return isConnected();
+    }
+
+    public boolean isAway() {
+        return isAway;
+    }
+
+    public void setAway(boolean isAway) {
+        this.isAway = isAway;
     }
 
     public boolean getIsSpectator() {
@@ -151,20 +160,21 @@ public enum Client {
              * created an else if statement that once /choice is typed by the user
              * it will show three choices R: rock, P: paper, S: scissors
              */
-        } else if (text.startsWith("/choice")) {
-            System.out.println("choice: R, P, S. skip to skip game");
-            text = text.replace("/choice ", "");
-            if (text.equalsIgnoreCase("R")) {
-                sendChoiceStatus("R");
-            } else if (text.equalsIgnoreCase("P")) {
-                sendChoiceStatus("P");
-            } else if (text.equalsIgnoreCase("S")) {
-                sendChoiceStatus("S");
-            }
-            return true;
-        } else if (text.equalsIgnoreCase("skip")) {
-            sendSkipStatus();
         }
+        // } else if (text.startsWith("/choice")) {
+        //     System.out.println("choice: R, P, S. skip to skip game");
+        //     text = text.replace("/choice ", "");
+        //     if (text.equalsIgnoreCase("R")) {
+        //         sendChoiceStatus("R");
+        //     } else if (text.equalsIgnoreCase("P")) {
+        //         sendChoiceStatus("P");
+        //     } else if (text.equalsIgnoreCase("S")) {
+        //         sendChoiceStatus("S");
+        //     }
+        //     return true;
+        // } else if (text.equalsIgnoreCase("skip")) {
+        //     sendSkipStatus();
+        // }
         return false;
     }
 
@@ -233,6 +243,12 @@ public enum Client {
     public void sendSpectatorStatus() throws IOException {
         Payload p = new Payload();
         p.setPayloadType(PayloadType.SPECTATOR);
+        out.writeObject(p);
+    }
+
+    public void sendAwayStatus() throws IOException {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.AWAY);
         out.writeObject(p);
     }
 
@@ -413,6 +429,16 @@ public enum Client {
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
+                break;
+            case AWAY:
+                if (players.containsKey(p.getClientId())) {
+                    players.get(p.getClientId()).setAway(isAway);
+                    if (isAway) {
+                        logger.info(String.format("Player %s is away", getClientNameById(p.getClientId()))
+                                    + Constants.ANSI_RESET);
+                    }
+                }
+                listeners.forEach(l -> l.onReceiveAway(p.getClientId(), isAway));
                 break;
             default:
                 logger.warning(String.format("Unhandled Payload type: %s", p.getPayloadType()));

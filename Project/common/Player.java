@@ -8,6 +8,7 @@ public class Player {
     private boolean isSkipped = false;
     private boolean isOut = false;
     private boolean isSpectator = false;
+    private boolean isAway = false;
     private String Hold;
 
     public void setReady(boolean isReady) {
@@ -18,6 +19,14 @@ public class Player {
         return this.isReady;
     }
 
+    public void setAway(boolean isAway) {
+        this.isAway = isAway;
+    }
+
+    public boolean isAway() {
+        return isAway;
+    }
+    
     public void setSpectator(boolean isSpectator) {
         this.isSpectator = isSpectator;
     }
@@ -60,6 +69,16 @@ public class Player {
 
     public String getChoice() {
         return this.Hold;
+    }
+
+    private String lastChoice;
+
+    public void setlastChoice(String lastChoice) {
+        this.lastChoice = lastChoice;
+    }
+
+    public String getlastChoice() {
+        return this.lastChoice;
     }
     
     private int points = 0;

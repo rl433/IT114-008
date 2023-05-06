@@ -80,4 +80,6 @@ public interface IClientEvents {
     void onReceivePoints(long clientId, int points);
 
     void onReceiveSpectator(long clientId, boolean isSpectator);
+
+    void onReceiveAway(long clientId, boolean isSpectator);
 }

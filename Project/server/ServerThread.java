@@ -194,6 +194,13 @@ public class ServerThread extends Thread {
         return send(p);
     }
 
+    public boolean sendAwayStatus(long clientId) {
+        Payload p = new Payload();
+        p.setPayloadType(PayloadType.AWAY);
+        p.setClientId(clientId);
+        return send(p);
+    }
+
     private boolean send(Payload payload) {
         try {
             logger.log(Level.FINE, "Outgoing payload: " + payload);
@@ -292,6 +299,14 @@ public class ServerThread extends Thread {
                     ((GameRoom) currentRoom).setSpectator(this);
                 } catch (Exception e) {
                     logger.severe(String.format("There was a problem during Spectator %s", e.getMessage()));
+                    e.printStackTrace();
+                }
+                break;
+            case AWAY:
+                try {
+                    ((GameRoom) currentRoom).setAway(this);
+                } catch (Exception e) {
+                    logger.severe(String.format("There was a problem during Away %s", e.getMessage()));
                     e.printStackTrace();
                 }
                 break;
